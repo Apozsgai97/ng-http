@@ -1,6 +1,6 @@
 import { inject, Injectable, signal } from '@angular/core';
 import { Place } from './place.model';
-import { map, tap } from 'rxjs';
+import { catchError, map, tap, throwError } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 
 @Injectable({
@@ -25,10 +25,23 @@ export class PlacesService {
   }
 
   addPlaceToUserPlaces(place: Place) {
-    this.userPlaces.update((places) => [...places, place]);
-    return this.httpClient.put('http://localhost:3000/user-places', {
-      placeId: place.id,
-    });
+    const prevPlaces = this.userPlaces();
+
+    if (!prevPlaces.some((p) => p.id === place.id)) {
+      this.userPlaces.set([...prevPlaces, place]);
+    }
+    return this.httpClient
+      .put('http://localhost:3000/user-places', {
+        placeId: place.id,
+      })
+      .pipe(
+        catchError((error) => {
+          this.userPlaces.set(prevPlaces);
+          return throwError(
+            () => new Error('Failed to add place to user places.')
+          );
+        })
+      );
   }
 
   removeUserPlace(place: Place) {}
