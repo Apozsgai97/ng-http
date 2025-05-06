@@ -1,20 +1,37 @@
-import { Injectable, signal } from '@angular/core';
+import { inject, Injectable, signal } from '@angular/core';
 
 import { Place } from './place.model';
+import { map } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
 
 @Injectable({
   providedIn: 'root',
 })
 export class PlacesService {
+  private httpClient = inject(HttpClient);
   private userPlaces = signal<Place[]>([]);
 
   loadedUserPlaces = this.userPlaces.asReadonly();
 
-  loadAvailablePlaces() {}
+  loadAvailablePlaces() {
+    return this.fetchPlaces('http://localhost:3000/places');
+  }
 
-  loadUserPlaces() {}
+  loadUserPlaces() {
+    return this.fetchPlaces('http://localhost:3000/user-places')
+  }
 
-  addPlaceToUserPlaces(place: Place) {}
+  addPlaceToUserPlaces(place: Place) {
+    return this.httpClient.put('http://localhost:3000/user-places', {
+      placeId: place.id,
+    });
+  }
 
   removeUserPlace(place: Place) {}
+
+  private fetchPlaces(url: string) {
+    return this.httpClient
+            .get<{ places: Place[] }>(url)
+            .pipe(map((resData) => resData.places))
+  }
 }

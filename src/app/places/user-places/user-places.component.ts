@@ -3,8 +3,7 @@ import { Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { PlacesContainerComponent } from '../places-container/places-container.component';
 import { PlacesComponent } from '../places.component';
 import { Place } from '../place.model';
-import { HttpClient } from '@angular/common/http';
-import { map } from 'rxjs';
+import { PlacesService } from '../places.service';
 
 @Component({
   selector: 'app-user-places',
@@ -16,18 +15,15 @@ import { map } from 'rxjs';
 export class UserPlacesComponent implements OnInit {
   isFetching = signal(false);
   error = signal('');
-  userPlaces = signal<Place[] | undefined>(undefined);
-  private httpClient = inject(HttpClient);
+  places = signal<Place[] | undefined>(undefined);
   private destroyRef = inject(DestroyRef);
+  private placesService = inject(PlacesService);
   
   ngOnInit() {
       this.isFetching.set(true);
-      const subscription = this.httpClient
-        .get<{ places: Place[] }>('http://localhost:3000/user-places')
-        .pipe(map((resData) => resData.places))
-        .subscribe({
+      const subscription = this.placesService.loadUserPlaces().subscribe({
           next: (places) => {
-            this.userPlaces.set(places);
+            this.places.set(places);
           },
           error: (error) => {
             console.error(error);
