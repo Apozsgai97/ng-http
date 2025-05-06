@@ -1,7 +1,6 @@
 import { inject, Injectable, signal } from '@angular/core';
-
 import { Place } from './place.model';
-import { map } from 'rxjs';
+import { map, tap } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 
 @Injectable({
@@ -18,10 +17,15 @@ export class PlacesService {
   }
 
   loadUserPlaces() {
-    return this.fetchPlaces('http://localhost:3000/user-places')
+    return this.fetchPlaces('http://localhost:3000/user-places').pipe(
+      tap({
+        next: (userPlaces) => this.userPlaces.set(userPlaces),
+      })
+    );
   }
 
   addPlaceToUserPlaces(place: Place) {
+    this.userPlaces.update((places) => [...places, place]);
     return this.httpClient.put('http://localhost:3000/user-places', {
       placeId: place.id,
     });
@@ -31,7 +35,7 @@ export class PlacesService {
 
   private fetchPlaces(url: string) {
     return this.httpClient
-            .get<{ places: Place[] }>(url)
-            .pipe(map((resData) => resData.places))
+      .get<{ places: Place[] }>(url)
+      .pipe(map((resData) => resData.places));
   }
 }
